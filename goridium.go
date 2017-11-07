@@ -1,4 +1,4 @@
-package main
+package goridium
 
 import (
 	"bufio"
@@ -141,7 +141,7 @@ func (rb *RockBlock) GetNetworkTime() (time int64, err error) {
 
 	time, err = strconv.ParseInt(string(reply[8:]), 16, 32)
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("No network time: %s", reply[8:])
 	}
 
 	time = (IridiumEpoch + (time * 90)) / 1000
@@ -424,54 +424,4 @@ func (rb *RockBlock) Ping() (err error) {
 		return fmt.Errorf("RockBlock ping failed")
 	}
 	return nil
-}
-
-func main() {
-	rb, err := NewRockBlock("/dev/ttyUSB0")
-	if err != nil {
-		log.Fatalf("Unable to open RockBlock: %v", err)
-	}
-
-	defer rb.Close()
-
-	err = rb.Ping()
-	if err != nil {
-		log.Fatalf("Unable to ping RockBlock: %v", err)
-	}
-
-	rb.EnableEcho()
-
-	rb.DisableRingAlerts()
-
-	rb.DisableFlowControl()
-
-	_, err = rb.GetSignalStrength()
-	if err != nil {
-		log.Fatalf("Unable to get signal strength: %v", err)
-	}
-
-	_, err = rb.GetNetworkTime()
-	if err != nil {
-		log.Fatalf("Unable to get network time: %v", err)
-	}
-
-	_, err = rb.GetSerialIdentifier()
-	if err != nil {
-		log.Fatalf("Unable to get serial id: %v", err)
-	}
-
-	err = rb.QueueMessage("Hello, World")
-	if err != nil {
-		log.Fatalf("Unable to queue message: %v", err)
-	}
-
-	err = rb.AttemptConnection()
-	if err != nil {
-		log.Fatalf("Unable to establish connection: %v", err)
-	}
-
-	err = rb.AttemptSession()
-	if err != nil {
-		log.Fatalf("Unable to establish session: %v", err)
-	}
 }

@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -xe
+
+pushd examples
+PI=192.168.0.108
+env GOOS=linux GOARCH=arm go build -o rb *.go && scp rb tc@$PI: && ssh tc@$PI ./rb
+popd
