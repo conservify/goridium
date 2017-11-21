@@ -329,14 +329,16 @@ func (rb *RockBlock) AttemptConnection() (err error) {
 
 }
 
-func (rb *RockBlock) AttemptSession() (err error) {
+func (rb *RockBlock) AttemptSession() (incoming []string, err error) {
 	attempts := 3
+
+	incoming = make([]string, 0)
 
 	log.Printf("Attempt session (attempts=%d)", attempts)
 
 	for {
 		if attempts == 0 {
-			return fmt.Errorf("Unable to establish session")
+			return incoming, fmt.Errorf("Unable to establish session")
 		}
 
 		attempts -= 1
@@ -344,20 +346,18 @@ func (rb *RockBlock) AttemptSession() (err error) {
 		command := "AT+SBDIX"
 		reply, err := rb.SendAndReadReply(command)
 		if err != nil {
-			return err
+			return incoming, err
 		}
 
 		if strings.Index(reply, "+SBDIX:") >= 0 {
 			sr, err := ParseSbdixReply(reply)
 			if err != nil {
-				return err
+				return incoming, err
 			}
-
-			fmt.Printf("%+v\n", *sr)
 
 			err = rb.Expect("OK")
 			if err != nil {
-				return err
+				return incoming, err
 			}
 
 			success := false
@@ -367,6 +367,18 @@ func (rb *RockBlock) AttemptSession() (err error) {
 			}
 
 			if sr.MtStatus == 1 && sr.MtLength > 0 {
+				reply, err := rb.SendAndReadReply("AT+SBDRB")
+				if err != nil {
+					return incoming, err
+				}
+
+				if reply == "OK" {
+					log.Printf("Empty incoming message.")
+
+				} else {
+					log.Printf("%v", reply)
+				}
+
 				rb.ProcessMtMessage(sr.MtQueued)
 			}
 			if sr.MtQueued > 0 {
@@ -374,12 +386,12 @@ func (rb *RockBlock) AttemptSession() (err error) {
 			}
 
 			if success {
-				return nil
+				return incoming, nil
 			}
 		}
-
-		// time.Sleep(30 * time.Second)
 	}
+
+	return
 }
 
 func (rb *RockBlock) EnableEcho() (err error) {

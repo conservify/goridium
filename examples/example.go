@@ -1,12 +1,28 @@
 package main
 
 import (
+	"flag"
 	"github.com/conservify/goridium"
 	"log"
+	"os"
 )
 
+type options struct {
+	Device string
+}
+
 func main() {
-	rb, err := goridium.NewRockBlock("/dev/ttyUSB0")
+	o := options{}
+
+	flag.StringVar(&o.Device, "device", "", "device to use")
+	flag.Parse()
+
+	if len(o.Device) == 0 {
+		flag.Usage()
+		os.Exit(2)
+	}
+
+	rb, err := goridium.NewRockBlock(o.Device)
 	if err != nil {
 		log.Fatalf("Unable to open RockBlock: %v", err)
 	}
