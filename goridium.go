@@ -163,21 +163,29 @@ func (rb *RockBlock) GetSerialIdentifier() (serial string, err error) {
 	return reply, nil
 }
 
-func (rb *RockBlock) ProcessMtMessage(mtMsn int64) (err error) {
+func (rb *RockBlock) ProcessMtMessage(mtMsn int64) (message string, err error) {
 	command := "AT+SBDRB"
 	err = rb.Send(command + "\r")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	_, err = rb.ReadLine()
+	line, err := rb.ReadLine()
 	if err != nil {
-		return err
+		return "", err
+	}
+
+	message = strings.TrimSpace(strings.Replace(line, command+"\r", "", 1))
+	if len(message) > 4 {
+		message = message[2:len(message)-2]
+		log.Printf("%d '%s'", len(message), message)
+	} else {
+		message = ""
 	}
 
 	err = rb.Expect("OK")
 	if err != nil {
-		return err
+		return "", fmt.Errorf("Expected OK: %v", err)
 	}
 
 	return
@@ -367,19 +375,13 @@ func (rb *RockBlock) AttemptSession() (incoming []string, err error) {
 			}
 
 			if sr.MtStatus == 1 && sr.MtLength > 0 {
-				reply, err := rb.SendAndReadReply("AT+SBDRB")
+				message, err := rb.ProcessMtMessage(sr.MtQueued)
 				if err != nil {
 					return incoming, err
 				}
-
-				if reply == "OK" {
-					log.Printf("Empty incoming message.")
-
-				} else {
-					log.Printf("%v", reply)
+				if message != "" {
+					incoming = append(incoming, message)
 				}
-
-				rb.ProcessMtMessage(sr.MtQueued)
 			}
 			if sr.MtQueued > 0 {
 				rb.AttemptSession()
