@@ -1,10 +1,12 @@
 timestamps {
     node () {
-        stage ('git') {
-            checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[url: 'https://github.com/Conservify/goridium.git']]])
-        }
+        dir ("../src/github.com/Conservify/goridium") {
+            stage ('git') {
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], userRemoteConfigs: [[url: 'https://github.com/Conservify/goridium.git']]])
+            }
 
-        stage ('build') {
+            stage ('build') {
+            }
         }
     }
 }
